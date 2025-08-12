@@ -1,6 +1,6 @@
 # PsyNetTest
 
-A test of functionality for a behavioral experiment using the PsyNet framework.
+A "Hello world!" test of functionality for a behavioral experiment using the PsyNet framework.
 
 This experiment is implemented using the [PsyNet framework](https://www.psynet.dev/).
 
