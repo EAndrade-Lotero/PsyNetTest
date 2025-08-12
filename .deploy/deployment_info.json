@@ -1,0 +1,13 @@
+{
+    "redeploying_from_archive": false,
+    "mode": "debug",
+    "is_local_deployment": true,
+    "is_ssh_deployment": false,
+    "folder_name": "experiment",
+    "secret": {
+        "py/object": "uuid.UUID",
+        "hex": "688306937d474a149acd9a53600212bb"
+    },
+    "deployment_id": "hello-world__mode=debug__launch=2025-08-12--00-18-40",
+    "locale": "en"
+}
