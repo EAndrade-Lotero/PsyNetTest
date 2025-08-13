@@ -30,10 +30,6 @@ class Exp(psynet.experiment.Experiment):
     label = "Timeline exercise"
     initial_recruitment_size = 1
 
-    variables = {
-        "new_variable": "some-value",
-    }
-
     config = {
         "min_accumulated_reward_for_abort": 0.15,
         "show_abort_button": True,
@@ -51,16 +47,20 @@ class Exp(psynet.experiment.Experiment):
         CodeBlock(
             lambda participant: participant.set_answer("Yes")
         ),
-        # CodeBlock(
-        #     lambda participant: participant.var.new(
-        #         "item", None
-        #     )
-        # ),
-        # CodeBlock(
-        #     lambda participant: participant.var.new(
-        #         "virtual_basket", None
-        #     )
-        # ),
+        CodeBlock(
+            lambda participant: participant.var.new(
+                "price", {
+                    "Bananas": 2.2,
+                    "Apples": 1.0,
+                    "Oranges": 1.5
+                },
+            )
+        ),
+        CodeBlock(
+            lambda participant: participant.var.new(
+                "virtual_basket", dict()
+            )
+        ),
         #----------------------------------------------
         # Main loop
         #----------------------------------------------
@@ -69,13 +69,19 @@ class Exp(psynet.experiment.Experiment):
             lambda participant: participant.answer == "Yes",
             Module(
                 "color",
-                ModularPage(
-                    "Shopping items",
-                    Prompt("Please choose the item you want to purchase:"),
-                    control=PushButtonControl(
-                        ["Bananas", "Apples", "Oranges"], 
-                        arrange_vertically=False
-                    ),
+                PageMaker(
+                    lambda participant: [
+                        ModularPage(
+                            "Shopping items",
+                            Prompt("Please choose the item you want to purchase:"),
+                            control=PushButtonControl(
+                                ["Bananas", "Apples", "Oranges"], 
+                                arrange_vertically=False
+                            ),
+                            time_estimate=5,
+                            save_answer="item",
+                        ),
+                    ],
                     time_estimate=5,
                 ),
                 CodeBlock(
@@ -87,7 +93,7 @@ class Exp(psynet.experiment.Experiment):
                     lambda participant: [
                         ModularPage(
                             "Amount",
-                            Prompt(f"How many {participant.var.item} do you want?"),
+                            Prompt(f"How many {participant.var.item} do you want?\nEach one costs {participant.var.price[participant.var.item]}"),
                             NumberControl(),
                             time_estimate=5,
                             save_answer="amount",
@@ -95,11 +101,11 @@ class Exp(psynet.experiment.Experiment):
                     ],
                     time_estimate=5,
                 ),
-                # CodeBlock(
-                #     lambda participant: participant.var.virtual_basket.update({
-                #         participant.var.item: participant.var.amount
-                #     })
-                # ),
+                CodeBlock(
+                    lambda participant: participant.var.virtual_basket.update({
+                        participant.var.item: participant.var.amount
+                    })
+                ),
                 PageMaker(
                     lambda participant: [
                         InfoPage(
@@ -110,7 +116,7 @@ class Exp(psynet.experiment.Experiment):
                     time_estimate=5,
                 ),
                 ModularPage(
-                    "loop_nafc",
+                    "stop_condition",
                     Prompt("Would you like to continue shopping?"),
                     control=PushButtonControl(["Yes", "No"], arrange_vertically=False),
                     save_answer="finished",
@@ -119,5 +125,17 @@ class Exp(psynet.experiment.Experiment):
             ),
             expected_repetitions=3,
         ), # End while loop
+        #----------------------------------------------
+        # Aggregation and final info
+        #----------------------------------------------
+        PageMaker(
+            lambda participant: [
+                InfoPage(
+                    f"Your order is:\n{'\n'.join([f'{amount} {item};' for item, amount in participant.var.virtual_basket.items()])} for a total of {sum([participant.var.price[item] * float(amount) for item, amount in participant.var.virtual_basket.items()])} dollars",
+                    time_estimate=3,
+                ),
+            ],
+            time_estimate=5,
+        ),
 
     ) # End timeline
