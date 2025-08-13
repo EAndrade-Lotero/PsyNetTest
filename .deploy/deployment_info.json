@@ -6,8 +6,8 @@
     "folder_name": "experiment",
     "secret": {
         "py/object": "uuid.UUID",
-        "hex": "688306937d474a149acd9a53600212bb"
+        "hex": "dd3bb25e908445dea50486790dd552c4"
     },
-    "deployment_id": "hello-world__mode=debug__launch=2025-08-12--00-18-40",
+    "deployment_id": "timeline-exercise__mode=debug__launch=2025-08-13--15-49-43",
     "locale": "en"
 }
