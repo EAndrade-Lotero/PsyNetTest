@@ -7,16 +7,18 @@
 body {
   font-family: Arial, sans-serif;
   background: #eceaea;
-  display: flex;
+  display: block;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start; /* ← change this */
+  min-height: 100vh;
   margin: 0;
+  overflow-y: auto;
+  padding-top: 20px; /* optional spacing from top */
 }
 
 .tabletop {
   width: 700px;
-  height: 700px;
+  min-height: 650px;
   background: #eceaea;
   border-radius: 20px;
   padding: 20px;
@@ -25,6 +27,7 @@ body {
   justify-content: space-between;
   align-items: center;
   position: relative;
+  margin: auto;
 }
 
 #countdown {
@@ -48,12 +51,12 @@ body {
 }
 
 .center-top {
-  width: 320px;
+  width: 340px;
   height: 250px;
 }
 
 .center-middle {
-  width: 320px;
+  width: 340px;
   height: 250px;
 }
 
@@ -257,7 +260,7 @@ body {
     bottomZone.appendChild(avatar);
     });
 
-    let timeRemaining = {{ config.timeout }}; // seconds (2 minutes)
+    let timeRemaining = {{ config.timeout }};
 
     function updateClock() {
         const minutes = Math.floor(timeRemaining / 60);
@@ -270,7 +273,12 @@ body {
             timeRemaining--;
         } else {
             clearInterval(timer);
-            document.dispatchEvent(new CustomEvent("done"));
+            console.log(`${timeRemaining} seconds`);
+            document.dispatchEvent(new Event("done"));
+            psynet.trial.registerEvent(
+                "done",
+                {info: "timeout"}
+              );
         }
     }
 

@@ -15,31 +15,67 @@ from psynet.timeline import (
 )
 from psynet.utils import get_logger
 
-from .custom_front_end import OuterGameControl
 from .game_paramters import (
     ENDOWMENT,
     MAX_WAITING_PROPOSALS,
     MAX_WAITING_FOR_OTHER,
 )
-from .custom_front_end import CustomSliderControl
+from .custom_front_end import (
+    CustomControl,
+    OuterPrompt,
+    InnerProposalControl,
+    InnerControl,
+    InnerPrompt,
+)
 
 
 logger = get_logger()
 
 
 class OuterProposalPage(ModularPage):
-    def __init__(self, context: Dict[str, str]) -> None:
 
+    def __init__(self, context: Dict[str, str]) -> None:
         prompt = Prompt(Markup(
             f"<h2>Preparation phase</h2>"
             f"<br>"
             f"<p>Choose who will take on the role of PROPOSER: </p>"
             f"<br>"
         ))
-        control = OuterGameControl(
+        control = CustomControl(
             context=context,
-            timeout=MAX_WAITING_PROPOSALS,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            external_template="outer_proposal.html",
         )
+        super().__init__(
+            label="outer_proposal",
+            prompt=prompt,
+            control=control,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            save_answer="outer_proposal",
+            events={
+                "done": Event(
+                    is_triggered_by="done",
+                    js="psynet.submitResponse();",
+                    delay=0.0,
+                ),
+            },
+        )
+
+
+class OuterProposalWaitingPage(ModularPage):
+
+    def __init__(self, context: Dict[str, str]) -> None:
+        prompt = Prompt(Markup(
+            f"<h2>Preparation phase</h2>"
+            f"<br>"
+            "<p>Waiting for your partner to select a PROPOSER. </p>"
+        ))
+        control = CustomControl(
+            context=context,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            external_template="outer_wait.html",
+        )
+
         super().__init__(
             label="outer_proposal",
             prompt=prompt,
@@ -56,56 +92,23 @@ class OuterProposalPage(ModularPage):
         )
 
 
-class OuterProposalWaitingPage(ModularPage):
-    def __init__(self) -> None:
-
-        prompt = Prompt(Markup(
-            f"<h2>Preparation phase</h2>"
-            f"<br>"
-            "<p>Click 'Next' to see which player your partner selects as PROPOSER. </p>"
-        ))
-        control = NullControl()
-        waiting_time = MAX_WAITING_FOR_OTHER
-        progress_display = ProgressDisplay(
-            stages=[
-                ProgressStage(
-                    time=waiting_time,
-                    color="gray"
-                ),
-            ],
-        )
-
-        super().__init__(
-            label="outer_proposal",
-            prompt=prompt,
-            control=control,
-            time_estimate=5,
-            save_answer="outer_proposal",
-            # events={
-            #     "responseEnable": Event(
-            #         is_triggered_by="trialStart",
-            #         delay=waiting_time,
-            #         js="onNextButton();",
-            #     ),
-            # },
-            # progress_display=progress_display,
-        )
-
-
 class OuterAcceptancePage(ModularPage):
 
-    def __init__(self, proposal: str) -> None:
+    def __init__(self, context: Dict[str, str], proposal: str) -> None:
         assert proposal in ["", "PROPOSER", "RESPONDER"]
 
-        prompt = Prompt(
-            f"Do you accept your partner's proposal of you to be the {proposal}? "
+        prompt = OuterPrompt(
+            text=f"Do you accept your partner's proposal of you to be the {proposal}? ",
+            proposal=proposal,
+            context=context,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            external_template="outer_acceptance.html",
         )
         control = PushButtonControl(
             choices=["Accept", "Reject"],
             labels=["Accept", "Reject"],
+            arrange_vertically=False,
         )
-        progress_display = None
-        waiting_time = MAX_WAITING_PROPOSALS
 
         super().__init__(
             label="outer_accept_answer",
@@ -113,35 +116,33 @@ class OuterAcceptancePage(ModularPage):
             control=control,
             time_estimate=5,
             save_answer="outer_accept_answer",
-            # events={
-            #     "responseEnable": Event(
-            #         is_triggered_by="trialStart",
-            #         delay=waiting_time,
-            #         js="onNextButton();",
-            #     ),
-            # },
-            # progress_display=progress_display,
+            events={
+                "done": Event(
+                    is_triggered_by="done",
+                    js="psynet.submitResponse();",
+                    delay=0.0,
+                ),
+            },
         )
 
 
 class InnerProposalPage(ModularPage):
-    def __init__(self, game:str):
+
+    def __init__(self, game:str, context: Dict[str, str]):
         assert game in ["ultimatum", "dictator"], f"Error: {game} is not a valid game type"
 
         text = f"<h2>Proposal phase</h2>\n"
         text += f"<br>\n"
         if game == "ultimatum":
             text += "<p>Proposal accepted. You are the PROPOSER. </p>\n"
-        text += f"<p>Decide how many of the {ENDOWMENT} coins you will give to your partner: <p/>\n"
+        text += f"<p>Use the slider below to decide how many of the {ENDOWMENT} coins you will give to your partner: <p/>\n"
         text += f"<br>\n"
 
         prompt = Markup(text)
-        control = CustomSliderControl(
-            start_value=0,
-            min_value=0,
-            max_value=ENDOWMENT,
-            n_steps=ENDOWMENT,
-            right_label="coins",
+        control = InnerProposalControl(
+            endowment=ENDOWMENT,
+            context=context,
+            time_estimate=MAX_WAITING_PROPOSALS,
         )
 
         super().__init__(
@@ -150,26 +151,62 @@ class InnerProposalPage(ModularPage):
             control=control,
             time_estimate=5,
             save_answer="inner_proposal",
-            # events={
-            #     "responseEnable": Event(
-            #         is_triggered_by="trialStart",
-            #         delay=waiting_time,
-            #         js="onNextButton();",
-            #     ),
-            # },
-            # progress_display=progress_display,
+            events={
+                "done": Event(
+                    is_triggered_by="done",
+                    js="psynet.submitResponse();",
+                    delay=0.0,
+                ),
+            },
+        )
+
+
+class InnerProposalWaitingPage(ModularPage):
+
+    def __init__(self, context: Dict[str, str]) -> None:
+        prompt = Prompt(Markup(
+            f"<h2>Proposal phase</h2>"
+            f"<br>"
+            "<p>Waiting for your partner's offer. </p>"
+        ))
+        control = CustomControl(
+            context=context,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            external_template="inner_wait.html",
+        )
+
+        super().__init__(
+            label="outer_proposal",
+            prompt=prompt,
+            control=control,
+            time_estimate=5,
+            save_answer="outer_proposal",
+            events={
+                "done": Event(
+                    is_triggered_by="done",
+                    js="psynet.submitResponse();",
+                    delay=0.0,
+                ),
+            },
         )
 
 
 class InnerAcceptancePage(ModularPage):
-    def __init__(self, proposal: int | None) -> None:
 
-        prompt = Markup(
-            f"<p>Do you accept your partner's proposal of {proposal} out of {ENDOWMENT}? </p>"
+    def __init__(self, context: Dict[str, str], proposal: int) -> None:
+
+        prompt = InnerPrompt(
+            text=f"<p>Do you accept your partner's proposal of {proposal} coins? </p>",
+            proposal=proposal,
+            endowment=ENDOWMENT,
+            context=context,
+            time_estimate=MAX_WAITING_PROPOSALS,
+            external_template="inner_acceptance.html",
         )
         control = PushButtonControl(
             choices=["Accept", "Reject"],
             labels=["Accept", "Reject"],
+            arrange_vertically=False,
         )
 
         super().__init__(
@@ -178,12 +215,11 @@ class InnerAcceptancePage(ModularPage):
             control=control,
             time_estimate=5,
             save_answer="inner_accept_answer",
-            # events={
-            #     "responseEnable": Event(
-            #         is_triggered_by="trialStart",
-            #         delay=waiting_time,
-            #         js="onNextButton();",
-            #     ),
-            # },
-            # progress_display=progress_display,
+            events={
+                "done": Event(
+                    is_triggered_by="done",
+                    js="psynet.submitResponse();",
+                    delay=0.0,
+                ),
+            },
         )
