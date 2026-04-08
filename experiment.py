@@ -21,15 +21,14 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = CustomTimeline(
         CodeBlock(
-            lambda participant: CustomTimeline.go_to_end(participant)
-        ),
-        CodeBlock(
-            lambda participant: logger.info(
-                f"==>>>>: {participant.elt_id}"
-            )
+            lambda participant: participant.var.set("round_failed", True)
         ),
         InfoPage(
-            "This is the MIDDLE page",
+            "This is the FIRST page",
+            time_estimate=5,
+        ),
+        InfoPage(
+            "I should have skipped this page",
             time_estimate=5,
         ),
         ModularPage(
@@ -37,9 +36,6 @@ class Exp(psynet.experiment.Experiment):
             prompt="This is a test",
             control=NullControl(),
             time_estimate=5,
-        ),
-        CodeBlock(
-            lambda participant: logger.info(f"==>>>>: {participant.elt_id}")
         ),
         PageMaker(
             lambda experiment, participant:
@@ -49,8 +45,12 @@ class Exp(psynet.experiment.Experiment):
             ),
             time_estimate=5
         ),
-        CodeBlock(
-            lambda participant: logger.info(f"==>>>>: {participant.elt_id}")
+        ModularPage(
+            label="end_round",
+            prompt="This the end-of-round page",
+            control=NullControl(),
+            save_answer="reward",
+            time_estimate=5,
         ),
         InfoPage(
             "This is the last page",
