@@ -17,7 +17,9 @@ class CustomTimeline(Timeline):
     def determine_end_round_idx(self) -> int:
         # Determine end_round page
         end_round_idx = None
+
         if self.can_fail_rounds:
+
             for i, elt in enumerate(self.elts['main']):
                 if isinstance(elt, ModularPage):
                     if hasattr(elt, "label"):
@@ -25,18 +27,15 @@ class CustomTimeline(Timeline):
                             end_round_idx = i - 1
                             break
 
-        if end_round_idx is None:
-            error_message = "Error: can_fail_rounds = True but end_round_idx is None.\n"
-            error_message += "A ModularPage with label = 'end_round' is required in the timeline."
-            raise Exception(error_message)
+            if end_round_idx is None:
+
+                error_message = "Error: can_fail_rounds = True but end_round_idx is None.\n"
+                error_message += "A ModularPage with label = 'end_round' is required in the timeline."
+                raise Exception(error_message)
 
         logger.info(f"CustomTimeLine: end round idx is set to {end_round_idx}")
 
         return end_round_idx
-
-    @staticmethod
-    def go_to_end(participant):
-        participant.var.round_failed = True
 
     @staticmethod
     def get_round_failed(participant):
@@ -69,11 +68,16 @@ class CustomTimeline(Timeline):
         logger.info(f"Current elt id is {current_elt_id}")
 
         if round_failed and current_elt_id < self.end_round_idx:
+
             while participant.elt_id[-1] <= self.end_round_idx:
                 new_elt = self.increase_one_page(experiment, participant)
                 if new_elt is not None:
                     new_elt.consume(experiment, participant)
+
+            participant.var.round_failed = False
+
         else:
+
             finished = False
             while not finished:
                 new_elt = self.increase_one_page(experiment, participant)

@@ -24,26 +24,12 @@ class Exp(psynet.experiment.Experiment):
             lambda participant: participant.var.set("round_failed", True)
         ),
         InfoPage(
-            "This is the FIRST page",
+            "In this page I fail the round.",
             time_estimate=5,
         ),
         InfoPage(
             "I should have skipped this page",
             time_estimate=5,
-        ),
-        ModularPage(
-            label="test1",
-            prompt="This is a test",
-            control=NullControl(),
-            time_estimate=5,
-        ),
-        PageMaker(
-            lambda experiment, participant:
-                InfoPage(
-                    f"{participant.answer}",
-                time_estimate=5
-            ),
-            time_estimate=5
         ),
         ModularPage(
             label="end_round",
