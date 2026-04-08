@@ -1,7 +1,10 @@
 import psynet.experiment
-from psynet.modular_page import ModularPage
+from psynet.modular_page import ModularPage, NullControl
 from psynet.page import InfoPage
-from psynet.timeline import Timeline, PageMaker
+from psynet.timeline import Timeline, PageMaker, CodeBlock
+from psynet.utils import get_logger
+
+logger = get_logger()
 
 from .custom_pages import (
     OuterProposalPage,
@@ -10,62 +13,33 @@ from .custom_pages import (
     InnerAcceptancePage,
 )
 from .custom_front_end import CustomLikertControl
+from .custom_timeline import CustomTimeline
 
 
 class Exp(psynet.experiment.Experiment):
     label = "Hello world"
 
-    timeline = Timeline(
-        # ModularPage(
-        #     label="likert",
-        #     prompt="This is a Likert scale",
-        #     control=CustomLikertControl(
-        #         lowest_value="Very unlikely",
-        #         highest_value="Very likely",
-        #         n_steps=5,
-        #         timeout=5,
-        #         timeout_answer="None",
-        #     ),
-        #     save_answer="likert",
-        #     time_estimate=5,
-        # ),
-        # OuterProposalPage(
-        #     context={
-        #         "coin_url": "/static/coin.png",
-        #         "generic_url": "/static/generic.png",
-        #         "plate_url": "/static/plate.png",
-        #     },
-        # ),
-        # WaitingPage(
-        #     context={
-        #         "coin_url": "/static/coin.png",
-        #         "generic_url": "/static/generic.png",
-        #         "plate_url": "/static/plate.png",
-        #     },
-        # ),
-        # OuterAcceptancePage(
-        #     context={
-        #         "coin_url": "/static/coin.png",
-        #         "generic_url": "/static/generic.png",
-        #         "plate_url": "/static/plate.png",
-        #     },
-        #     proposal="RESPONDER",
-        # ),
-        # InnerProposalPage(
-        #     game="ultimatum",
-        #     context={
-        #         "coin_url": "/static/coin.png",
-        #         "generic_url": "/static/generic.png",
-        #         "plate_url": "/static/plate.png",
-        #     },
-        # ),
-        InnerAcceptancePage(
-            context={
-                "coin_url": "/static/coin.png",
-                "generic_url": "/static/generic.png",
-                "plate_url": "/static/plate.png",
-            },
-            proposal=3,
+    timeline = CustomTimeline(
+        CodeBlock(
+            lambda participant: CustomTimeline.go_to_end(participant)
+        ),
+        CodeBlock(
+            lambda participant: logger.info(
+                f"==>>>>: {participant.elt_id}"
+            )
+        ),
+        InfoPage(
+            "This is the MIDDLE page",
+            time_estimate=5,
+        ),
+        ModularPage(
+            label="test1",
+            prompt="This is a test",
+            control=NullControl(),
+            time_estimate=5,
+        ),
+        CodeBlock(
+            lambda participant: logger.info(f"==>>>>: {participant.elt_id}")
         ),
         PageMaker(
             lambda experiment, participant:
@@ -75,4 +49,11 @@ class Exp(psynet.experiment.Experiment):
             ),
             time_estimate=5
         ),
+        CodeBlock(
+            lambda participant: logger.info(f"==>>>>: {participant.elt_id}")
+        ),
+        InfoPage(
+            "This is the last page",
+            time_estimate=5,
+        )
     )
