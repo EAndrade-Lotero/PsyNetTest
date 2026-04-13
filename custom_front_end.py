@@ -12,8 +12,10 @@ from psynet.modular_page import (
 from psynet.timeline import FailedValidation
 from psynet.utils import get_logger, get_translator
 
-from .game_paramters import ENDOWMENT
-
+from .game_paramters import (
+    ENDOWMENT,
+    NUMBER_OF_REPEATED_GAMES,
+)
 
 logger = get_logger()
 
@@ -100,6 +102,29 @@ class InnerPrompt(OuterPrompt):
         self.endowment = endowment
 
 
+class TimeoutPrompt(Prompt):
+
+    macro = "timeout"
+    external_template = "custom-prompt-with-timer.html"
+
+    def __init__(
+        self,
+        timeout:int,
+        timeout_answer:str='No answer',
+        text: Union[None, str, Markup] = None,
+        text_align: str = "left",
+        buttons: Optional[List] = None,
+        loop: bool = False,
+    ):
+        super().__init__(
+            text=text,
+            text_align=text_align,
+            buttons=buttons,
+            loop=loop,
+        )
+        self.timeoutSeconds = 10
+        self.timeoutAnswer = timeout_answer
+
 ###########################################
 # Custom controls
 ###########################################
@@ -113,6 +138,7 @@ class CustomControl(Control):
         context:Dict[str, str],
         time_estimate:int,
         external_template:str,
+        round_:int,
     ) -> None:
         super().__init__()
         self.coin_url = context["coin_url"]
@@ -121,6 +147,8 @@ class CustomControl(Control):
         self.timeout = time_estimate
         self.macro = external_template.split(".")[0]
         self.external_template = external_template
+        self.round = round_
+        self.num_rounds = NUMBER_OF_REPEATED_GAMES
 
 
 class InnerProposalControl(Control):
@@ -166,9 +194,6 @@ class InnerControl(CustomControl):
         self.value = value
 
 
-LikertTimeoutAnswer = Union[Literal["random"], Literal["None"], int]
-
-
 class CustomLikertControl(Control):
     macro = "likert"
     external_template = "likert.html"
@@ -179,54 +204,30 @@ class CustomLikertControl(Control):
         highest_value: str,
         n_steps: int,
         timeout: Optional[int] = None,
-        timeout_answer: LikertTimeoutAnswer = "random",
+        timeout_answer: Union[str, int, float] = "No answer",
     ) -> None:
         super().__init__()
         self.lowest_value = lowest_value
         self.highest_value = highest_value
         self.n_steps = n_steps
-        if timeout is not None and int(timeout) > 0:
-            self.timer_enabled = True
-            self.timeout = int(timeout)
-        else:
-            self.timer_enabled = False
-            self.timeout = 0
-
-        if isinstance(timeout_answer, bool):
-            raise ValueError("timeout_answer must not be a boolean")
-        if isinstance(timeout_answer, int):
-            if not (1 <= timeout_answer <= n_steps):
-                raise ValueError(
-                    f"timeout_answer int must be between 1 and n_steps ({n_steps}), got {timeout_answer!r}"
-                )
-            self.timeout_answer_mode = "fixed"
-            self.timeout_answer_fixed = int(timeout_answer)
-        elif timeout_answer == "random":
-            self.timeout_answer_mode = "random"
-            self.timeout_answer_fixed = 0
-        elif timeout_answer == "None":
-            self.timeout_answer_mode = "none"
-            self.timeout_answer_fixed = 0
-        else:
-            raise ValueError(
-                "timeout_answer must be 'random', 'None', or an int from 1 to n_steps"
-            )
 
     def format_answer(self, raw_answer, **kwargs):
         if raw_answer is None or raw_answer == "":
             return None
         try:
-            value = int(raw_answer)
+            if isinstance(raw_answer, str):
+                assert raw_answer == "No answer"
+                value = raw_answer
+            else:
+                value = int(raw_answer)
+                if not (1 <= value <= self.n_steps):
+                    return None
         except (TypeError, ValueError):
-            return None
-        if not (1 <= value <= self.n_steps):
             return None
         return value
 
     def validate(self, response, **kwargs):
         if response.answer is None:
-            if self.timeout_answer_mode == "none":
-                return None
             _p = get_translator(context=True)
             return FailedValidation(
                 _p(

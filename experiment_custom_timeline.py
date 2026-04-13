@@ -18,24 +18,28 @@ from .custom_timeline import CustomTimeline
 
 class Exp(psynet.experiment.Experiment):
     label = "Hello world"
-    text = label
 
     timeline = CustomTimeline(
+        CodeBlock(
+            lambda participant: participant.var.set("round_failed", True)
+        ),
         InfoPage(
-            "Here we go",
+            "In this page I fail the round.",
+            time_estimate=5,
+        ),
+        InfoPage(
+            "I should have skipped this page",
             time_estimate=5,
         ),
         ModularPage(
-            label=label,
-            prompt=TimeoutPrompt(
-                text=Markup(text),
-                timeout=10,
-            ),
-            control=CustomLikertControl(
-                lowest_value="Very inaccurate",
-                highest_value="Very accurate",
-                n_steps=5,
-            ),
-            time_estimate=10,
+            label="end_round",
+            prompt="This the end-of-round page",
+            control=NullControl(),
+            save_answer="reward",
+            time_estimate=5,
+        ),
+        InfoPage(
+            "This is the last page",
+            time_estimate=5,
         )
     )

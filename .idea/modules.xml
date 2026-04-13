@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../PsyNet/.idea/PsyNet.iml" filepath="$PROJECT_DIR$/../PsyNet/.idea/PsyNet.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/PsyNetTest.iml" filepath="$PROJECT_DIR$/.idea/PsyNetTest.iml" />
     </modules>
   </component>
