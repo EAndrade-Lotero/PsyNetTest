@@ -19,6 +19,7 @@ from .game_paramters import (
     MAX_WAITING_PROPOSALS,
     WAIT_PAGE_TIME,
     MAX_WAITING_SEEING_INFO,
+    NUMBER_OF_ROUNDS,
 )
 from .custom_front_end import (
     CustomControl,
@@ -26,6 +27,7 @@ from .custom_front_end import (
     InnerProposalControl,
     InnerPrompt,
     ScorePrompt,
+    TimeoutPrompt,
 )
 
 
@@ -35,17 +37,21 @@ logger = get_logger()
 class OuterProposalPage(ModularPage):
 
     def __init__(self, context: Dict[str, str]) -> None:
-        prompt = Prompt(Markup(
+        prompt = TimeoutPrompt(
+            timeout=1000,
+            round_=1,
+            num_rounds=NUMBER_OF_ROUNDS,
+            text=Markup(
             f"<h2>Preparation phase</h2>"
             f"<br>"
-            f"<p>Choose who will take on the role of PROPOSER: </p>"
-            f"<p>When you are ready, press the 'Next' button (scroll down the page if necessary). </p>"
-            f"<p>(If you don't press the 'Next' button within {MAX_WAITING_PROPOSALS} seconds, a random choice will be made for you). </p>"
+            f"<p>Drag and drop the coins onto one of the players: </p>"
+            # f"<p>When you are ready, press the 'Next' button (scroll down the page if necessary). </p>"
+            # f"<p>(If you don't press the 'Next' button within {MAX_WAITING_PROPOSALS} seconds, a random choice will be made for you). </p>"
         ))
         control = CustomControl(
             context=context,
-            time_estimate=MAX_WAITING_PROPOSALS,
-            external_template="outer_proposal.html",
+            external_template="template.html",
+            # external_template="outer_proposal.html",
         )
         super().__init__(
             label="outer_proposal",

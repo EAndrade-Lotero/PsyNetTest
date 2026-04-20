@@ -15,18 +15,27 @@ from .custom_pages import (
 from .custom_front_end import CustomLikertControl
 from .custom_timeline import CustomTimeline
 
-from .final_survey import get_final_survey
 
 class Exp(psynet.experiment.Experiment):
     label = "Hello world"
     text = label
 
-    timeline = Timeline(
-        OuterProposalPage(
-            context={
-                "coin_url": "/static/coin.png",
-                "generic_url": "/static/generic.png",
-                "plate_url": "/static/plate.png",
-            },
+    timeline = CustomTimeline(
+        InfoPage(
+            "Here we go",
+            time_estimate=5,
+        ),
+        ModularPage(
+            label=label,
+            prompt=TimeoutPrompt(
+                text=Markup(text),
+                timeout=10,
+            ),
+            control=CustomLikertControl(
+                lowest_value="Very inaccurate",
+                highest_value="Very accurate",
+                n_steps=5,
+            ),
+            time_estimate=10,
         )
     )
