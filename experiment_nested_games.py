@@ -17,11 +17,9 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         OuterProposalPage(
-            context={
-                "coin_url": "/static/coin.png",
-                "generic_url": "/static/generic.png",
-                "plate_url": "/static/plate.png",
-            },
+            accumulated_score_me=0,
+            accumulated_score_partner=0,
+            round_=1,
         ),
         OuterProposalWaitingPage(
             context={

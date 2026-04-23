@@ -15,6 +15,7 @@ class EndRoundPage(ModularPage):
             control=control, 
             save_answer=save_answer, 
             time_estimate=time_estimate, 
+            **kwargs,
         )
 
 

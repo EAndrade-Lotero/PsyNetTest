@@ -11,6 +11,7 @@ from .custom_pages import (
     OuterAcceptancePage,
     InnerProposalPage,
     InnerAcceptancePage,
+    ScorePage,
 )
 from .custom_front_end import CustomLikertControl
 from .custom_timeline import CustomTimeline
@@ -22,11 +23,25 @@ class Exp(psynet.experiment.Experiment):
     text = label
 
     timeline = Timeline(
-        OuterProposalPage(
-            context={
-                "coin_url": "/static/coin.png",
-                "generic_url": "/static/generic.png",
-                "plate_url": "/static/plate.png",
-            },
-        )
+        ScorePage(
+            outer_game_type="ultimatum",
+            inner_game_type="ultimatum",
+            proposer=False,
+            proposal=2,
+            remainder_=8,
+            accumulated_score=10,
+            partners_accumulated_score=11,
+            outer_accepted=True,
+            inner_accepted=True,
+            round_failed=False,
+            num_rounds_failed=1,
+            round_=1,
+        ),
+        PageMaker(
+            lambda participant: InfoPage(
+                f"{participant.answer}",
+                time_estimate=5
+            ),
+            time_estimate=5
+        ),
     )
