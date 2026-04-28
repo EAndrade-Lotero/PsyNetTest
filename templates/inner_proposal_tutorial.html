@@ -1,18 +1,4 @@
-{# 0 → bowl; 1–9 → few_coins; 10–30 → more_coins; 31+ → overflow_coins #}
-{% macro bowl_image_src(score) -%}
-  {%- set n = score|default(0)|int -%}
-  {%- if n <= 0 -%}
-../static/bowl.png
-  {%- elif n < 10 -%}
-../static/few_coins.png
-  {%- elif n <= 30 -%}
-../static/more_coins.png
-  {%- else -%}
-../static/overflow_coins.png
-  {%- endif -%}
-{%- endmacro %}
-
-{% macro inner_proposal(config) %}
+{% macro inner_proposal_tutorial(config) %}
 
 <style>
   body {
@@ -429,6 +415,62 @@
       border-radius: 999px;
       background: #f4f4f6;
     }
+
+  .inner-proposal-tutorial-feedback[hidden] {
+    display: none !important;
+  }
+
+  .inner-proposal-tutorial-feedback {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .inner-proposal-tutorial-feedback__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+  }
+
+  .inner-proposal-tutorial-feedback__panel {
+    position: relative;
+    z-index: 1;
+    max-width: 28rem;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 10px;
+    padding: 1.25rem 1.4rem 1.1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+    color: #222;
+    line-height: 1.5;
+  }
+
+  .inner-proposal-tutorial-feedback__message {
+    font-size: 0.95rem;
+    margin: 0 0 1rem;
+  }
+
+  .inner-proposal-tutorial-feedback__btn {
+    display: block;
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #0d6efd;
+    color: #fff;
+  }
+
+  .inner-proposal-tutorial-feedback__btn:hover {
+    background: #0b5ed7;
+  }
   </style>
 
 <div class="inner-proposal-root">
@@ -438,8 +480,8 @@
         <div class="player-stack">
           <div class="player-row">
             <div class="bowl-stack">
-              <img class="bowl partner" src="{{ bowl_image_src(config.accumulated_score_partner) }}" alt="" />
-              <div class="bowl-label bowl-label-partner">{{ config.accumulated_score_partner }} coins</div>
+              <img class="bowl partner" src="../static/bowl.png" alt="" />
+              <div class="bowl-label bowl-label-partner">0 coins</div>
             </div>
             <div class="avatar partner"></div>
           </div>
@@ -465,7 +507,7 @@
         <div class="player-stack">
         <div class="player-row me-row">
         <div class="bowl-stack">
-          <img class="bowl" src="{{ bowl_image_src(config.accumulated_score_me) }}" alt="" />
+          <img class="bowl" src="../static/bowl.png" alt="" />
           <div class="bowl-label bowl-label-me">{{ config.accumulated_score_me }} coins</div>
         </div>
         <div class="avatar"></div>
@@ -494,6 +536,26 @@
   <div class="offer-footer">
     <button type="button" class="btn-make-offer" id="makeOfferBtn">Make the offer</button>
   </div>
+
+  <div
+    id="inner-proposal-tutorial-feedback"
+    class="inner-proposal-tutorial-feedback"
+    role="dialog"
+    aria-modal="true"
+    hidden
+  >
+    <div class="inner-proposal-tutorial-feedback__backdrop" aria-hidden="true"></div>
+    <div class="inner-proposal-tutorial-feedback__panel">
+      <p id="inner-proposal-tutorial-feedback-text" class="inner-proposal-tutorial-feedback__message"></p>
+      <button type="button" id="inner-proposal-tutorial-feedback-continue" class="inner-proposal-tutorial-feedback__btn">
+        Continue
+      </button>
+      <button type="button" id="inner-proposal-tutorial-feedback-ok" class="inner-proposal-tutorial-feedback__btn" hidden>
+        OK
+      </button>
+    </div>
+  </div>
+
   </div>
 
   <script>
@@ -504,6 +566,12 @@
       const basket = root.querySelector("#inner-proposal-basket");
       const coinPile = root.querySelector("#inner-proposal-coin-pile");
       const TOTAL_COINS = {{ config.endowment }};
+      const TARGET_COINS = Number({{ config.num_coins }});
+
+      const feedbackEl = root.querySelector("#inner-proposal-tutorial-feedback");
+      const feedbackText = root.querySelector("#inner-proposal-tutorial-feedback-text");
+      const feedbackContinue = root.querySelector("#inner-proposal-tutorial-feedback-continue");
+      const feedbackOk = root.querySelector("#inner-proposal-tutorial-feedback-ok");
 
       function updateCoins(value) {
         basket.innerHTML = "";
@@ -605,21 +673,60 @@
 
       updateSliderConfig();
 
+      function getCurrentProposedCoins() {
+        const min = Number(slider.min);
+        const max = Number(slider.max);
+        const step = Number(slider.step);
+        let v = Number(slider.value);
+        v = clamp(v, min, max);
+        v = snapToStep(v, min, step);
+        return Math.round(v);
+      }
+
+      function showFeedbackSuccess() {
+        feedbackText.textContent = "Excellent! Press the continue button to proceed to the next page.";
+        feedbackContinue.hidden = false;
+        feedbackOk.hidden = true;
+        feedbackEl.removeAttribute("hidden");
+      }
+
+      function showFeedbackError() {
+        feedbackText.textContent = "Incorrect! Please try again!";
+        feedbackContinue.hidden = true;
+        feedbackOk.hidden = false;
+        feedbackEl.removeAttribute("hidden");
+      }
+
+      function hideFeedback() {
+        feedbackEl.setAttribute("hidden", "");
+      }
+
       function handleMakeOffer() {
         if (typeof psynet === "undefined") {
           return;
         }
-        const answer = slider.value;
-        psynet.stageResponse = function () {
-          psynet.response.staged.rawAnswer = answer;
-        };
-        psynet.stageResponse();
-        psynet.nextPage(answer);
+        const proposed = getCurrentProposedCoins();
+        if (proposed === TARGET_COINS) {
+          showFeedbackSuccess();
+        } else {
+          showFeedbackError();
+        }
       }
 
       const makeOfferBtn = root.querySelector("#makeOfferBtn");
       if (makeOfferBtn) {
         makeOfferBtn.addEventListener("click", handleMakeOffer);
+      }
+
+      if (feedbackContinue) {
+        feedbackContinue.addEventListener("click", function () {
+          hideFeedback();
+          psynet.nextPage("Tutorial_Ok");
+        });
+      }
+
+      if (feedbackOk) {
+        feedbackOk.addEventListener("click", hideFeedback);
       }
     })();
   </script>
