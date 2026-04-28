@@ -1,21 +1,44 @@
-from psynet.timeline import Timeline, PageMakerFinishedError
-from psynet.utils import get_logger, log_time_taken
-from psynet.timeline import Page, PageMaker
-from psynet.modular_page import ModularPage
+from typing import Union
+from psynet.timeline import (
+    Timeline,
+    PageMakerFinishedError,
+)
+from psynet.utils import (
+    get_logger,
+    log_time_taken,
+)
+from psynet.timeline import (
+    Page,
+    PageMaker,
+)
+from psynet.modular_page import (
+    ModularPage,
+    Prompt,
+    Control,
+)
 
 logger = get_logger()
 
 
 class EndRoundPage(ModularPage):
 
-    def __init__(self, label, prompt, control, save_answer, time_estimate, **kwargs):
+    def __init__(
+        self,
+        label: str,
+        prompt: Union[Prompt | str],
+        control: Control,
+        save_answer: str,
+        time_estimate: int,
+        show_next_button: bool,
+        **kwargs
+    ) -> None:
         super().__init__(
             label=label,
             prompt=prompt, 
             control=control, 
             save_answer=save_answer, 
-            time_estimate=time_estimate, 
-            **kwargs,
+            time_estimate=time_estimate,
+            show_next_button=show_next_button,
         )
 
 
@@ -38,6 +61,7 @@ class CustomTimeline(Timeline):
 
             while not finished:
                 new_elt = self.increase_one_page(experiment, participant)
+                logger.info(f"New elt: {type(new_elt)}")
 
                 if isinstance(new_elt, EndRoundPage):
                     finished = True

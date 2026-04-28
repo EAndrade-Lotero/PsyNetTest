@@ -13,7 +13,6 @@ from psynet.utils import get_logger, get_translator
 from .game_paramters import (
     ENDOWMENT,
     NUMBER_OF_ROUNDS,
-    MAX_TIMEOUT_ROUNDS,
 )
 
 logger = get_logger()
@@ -21,55 +20,6 @@ logger = get_logger()
 ###########################################
 # Custom prompts
 ###########################################
-
-class OuterPrompt(Prompt):
-    macro = ""
-    external_template = ""
-
-    def __init__(
-        self,
-        text:str,
-        proposal:str,
-        context:Dict[str, str],
-        time_estimate:int,
-        external_template:str,
-        round_:int,
-    ) -> None:
-        super().__init__()
-        self.text = text
-        self.proposal = proposal
-        self.coin_url = context["coin_url"]
-        self.generic_url = context["generic_url"]
-        self.plate_url = context["plate_url"]
-        self.timeout = time_estimate
-        self.macro = external_template.split(".")[0]
-        self.external_template = external_template
-        self.round = round_
-        self.num_rounds = NUMBER_OF_ROUNDS
-
-
-class InnerPrompt(OuterPrompt):
-
-    def __init__(
-        self,
-        text:str,
-        proposal:int,
-        endowment:int,
-        context:Dict[str, str],
-        time_estimate:int,
-        external_template:str,
-        round_:int,
-    ) -> None:
-        super().__init__(
-            text=text,
-            proposal=str(proposal),
-            context=context,
-            time_estimate=time_estimate,
-            external_template=external_template,
-            round_=round_,
-        )
-        self.endowment = endowment
-
 
 class TimeoutPrompt(Prompt):
 
@@ -100,7 +50,6 @@ class TimeoutPrompt(Prompt):
         self.num_rounds = num_rounds
         self.show_rounds = show_rounds
 
-
 ###########################################
 # Custom controls
 ###########################################
@@ -115,6 +64,7 @@ class OuterProposalControl(Control):
         proposal: Union[str, None] = None,
         accumulated_score_me: int = 0,
         accumulated_score_partner: int = 0,
+        round_: Optional[int] = 1,
         show_next: bool = True,
     ) -> None:
         super().__init__()
@@ -124,6 +74,7 @@ class OuterProposalControl(Control):
         self.accumulated_score_partner = int(accumulated_score_partner)
         self.show_next = show_next
         self.proposal = proposal
+        self.round = round_
 
 
 class InnerProposalControl(Control):
@@ -176,83 +127,14 @@ class ScoreControl(Control):
 
     def __init__(
         self,
-        score: Union[int, None],
-        outer_game_type: str,
-        inner_game_type: str,
-        proposer: bool,
-        proposal: int,
-        remainder_: int,
-        accumulated_score: int,
-        partners_accumulated_score: int,
-        outer_accepted: Optional[bool]=True,
-        inner_accepted: Optional[bool]=True,
-        round_failed: Optional[bool]=False,
-        num_rounds_failed: Optional[int] = 0,
+        content: str,
+        accumulated_score_me: int = 0,
+        accumulated_score_partner: int = 0,
     ):
         super().__init__()
-
-        # Assign attributes
-        self.score = score
-        self.accumulated_score_me = int(accumulated_score)
-        self.accumulated_score_partner = int(partners_accumulated_score)
-
-        if num_rounds_failed >= MAX_TIMEOUT_ROUNDS:
-            self.content = f"""
-                <p>Round finished with score 0 coins. </p>
-                <p>Number of timeouts exceeded! Experiment failed! </p>
-            """
-        else:
-            if round_failed:
-                self.content = f"""
-                    <p>Round failed! One of the participants timed out. Round finished with score 0 coins. </p>
-                """
-            else:
-                if outer_game_type == "ultimatum" and not outer_accepted:
-                    self.content = f"""
-                        <p>Proposal was not accepted. Round finished with score 0 coins. </p>
-                    """
-                else:
-                    if inner_game_type == "dictator":
-                        self.content = f"""
-                            <p>You have given {proposal} coins to your partner. </p>
-                            <p>You keep the remainder of {remainder_} coins. </p>
-                        """
-                    elif inner_game_type == "ultimatum":
-                        if inner_accepted:
-                            if proposer:
-                                self.content = f"""
-                                    <p>You have proposed {proposal} coins to your partner. </p>
-                                    <p>Your proposal was accepted. </p>
-                                    <p>You keep the remainder of {remainder_} coins. </p>
-                                """
-                            else:
-                                self.content = f"""
-                                    <p>Your partner has proposed to give you {proposal} coins. </p>
-                                    <p>You accepted this proposal. You keep these {proposal} coins. </p>
-                                """
-                        else:
-                            self.content = f"""
-                                <p>Proposal was not accepted. Round finished with score 0 coins. </p>
-                            """
-                    else:
-                        raise ValueError(f"{inner_game_type} is not a valid inner game type.")
-
-
-class InnerControl(OuterProposalControl):
-
-    def __init__(
-        self,
-        value:int,
-        context:Dict[str, str],
-        time_estimate:int,
-        external_template:str,
-    ) -> None:
-        super().__init__(
-            context=context,
-            time_estimate=time_estimate,
-            external_template=external_template,
-        )
-        self.value = value
+        self.content = content
+        self.accumulated_score_me = int(accumulated_score_me)
+        self.accumulated_score_partner = int(accumulated_score_partner)
 
 
 class CustomLikertControl(Control):
